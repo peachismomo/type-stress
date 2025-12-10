@@ -45,4 +45,7 @@ int main()
         std::cout << f.name << " offset=" << f.offset
                   << " size=" << f.size << " type=" << f.type.name() << "\n";
     }
+
+    auto &typeInfo3 = stress::getTypeInfo<int>();
+    std::cout << typeid(int).name() << " no. of properties=" << typeInfo3.properties.size() << std::endl;
 }

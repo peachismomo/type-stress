@@ -85,4 +85,12 @@ namespace stress
         return gTypeRegistry[typeid(T)];
     }
 
+    inline TypeInfo *getTypeInfo(const std::type_index &ti)
+    {
+        auto it = gTypeRegistry.find(ti);
+        if (it != gTypeRegistry.end())
+            return &it->second;
+        return nullptr; // type not reflectable
+    }
+
 } // namespace stress
