@@ -4,6 +4,11 @@
 
 STRESS_STRUCT(ExampleStruct)
 {
+    ExampleStruct() = default;
+
+    ExampleStruct(int a_, float b_, bool c_)
+        : a(a_), b(b_), c(c_) {}
+
     int a;
     float b;
     bool c;
@@ -25,6 +30,16 @@ STRESS_STRUCT(ExampleStruct2)
         STRESS_FIELD(e),
         STRESS_FIELD(f))
 };
+
+// Inheritance doesn't work yet
+// STRESS_STRUCT_INHERIT(ExampleStruct3, public ExampleStruct, public ExampleStruct2)
+// {
+//     int g, h, i;
+//     STRESS_FIELDS(
+//         STRESS_FIELD(g),
+//         STRESS_FIELD(h),
+//         STRESS_FIELD(i))
+// };
 
 int main()
 {
@@ -48,4 +63,6 @@ int main()
 
     auto &typeInfo3 = stress::getTypeInfo<int>();
     std::cout << typeid(int).name() << " no. of properties=" << typeInfo3.properties.size() << std::endl;
+
+    ExampleStruct exampleStruct(1, 1.f, false);
 }
