@@ -163,15 +163,28 @@ namespace stress
     };
 
     template <typename Class, typename Member>
+    constexpr std::size_t member_offset(Member Class::*m)
+    {
+        // Pick a non-zero base to avoid null-pointer-subtraction warnings
+        constexpr std::uintptr_t kBase = 0x1000;
+        auto base = reinterpret_cast<const Class *>(kBase);
+        auto mem = &(base->*m);
+        return reinterpret_cast<std::uintptr_t>(mem) - kBase;
+    }
+
+    template <typename Class, typename Member>
     FieldInfo makeField(const char *name, Member Class::*m,
                         bool isSerializable = false,
                         bool isPrivate = false,
                         bool isReadonly = false)
     {
+        static_assert(std::is_standard_layout_v<Class>,
+                      "Reflection offset requires standard-layout type.");
+
         return FieldInfo{
             name,
             typeid(Member),
-            size_t(reinterpret_cast<char *>(&(reinterpret_cast<Class *>(0)->*m)) - reinterpret_cast<char *>(0)),
+            member_offset(m),
             sizeof(Member),
             isSerializable,
             isPrivate,
@@ -186,7 +199,7 @@ namespace stress
     }
 
     template <typename T>
-    const FieldInfo &getFieldInfo(const TypeInfo &typeInfo, std::type_index &ti)
+    const FieldInfo &getFieldInfo([[maybe_unused]] const TypeInfo &typeInfo, [[maybe_unused]] std::type_index &ti)
     {
     }
 
