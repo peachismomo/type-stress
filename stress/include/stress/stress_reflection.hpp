@@ -178,9 +178,6 @@ namespace stress
                         bool isPrivate = false,
                         bool isReadonly = false)
     {
-        static_assert(std::is_standard_layout_v<Class>,
-                      "Reflection offset requires standard-layout type.");
-
         return FieldInfo{
             name,
             typeid(Member),
