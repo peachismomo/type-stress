@@ -49,7 +49,7 @@ int main()
     for (auto &f : typeInfo.properties)
     {
         std::cout << f.name << " offset=" << f.offset
-                  << " size=" << f.size << " type=" << f.type.name() << "\n";
+                  << " size=" << f.size << " type=" << f.type.name() << " iterable=" << int(f.containerKind) << "\n";
     }
 
     auto &typeInfo2 = stress::getTypeInfo<ExampleStruct2>();
@@ -58,7 +58,7 @@ int main()
     for (auto &f : typeInfo2.properties)
     {
         std::cout << f.name << " offset=" << f.offset
-                  << " size=" << f.size << " type=" << f.type.name() << "\n";
+                  << " size=" << f.size << " type=" << f.type.name() << " iterable=" << int(f.containerKind) << "\n";
     }
 
     auto &typeInfo3 = stress::getTypeInfo<int>();

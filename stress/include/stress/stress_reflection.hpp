@@ -1,10 +1,18 @@
 #pragma once
 #include <tuple>
+#include <iterator>
 #include <vector>
 #include <unordered_map>
 #include <typeindex>
+#include <string>
 #include <string_view>
 #include <cstddef>
+#include <type_traits>
+#include <concepts>
+#include <tuple>
+#include <optional>
+#include <variant>
+#include <array>
 
 #define STRESS_FIELD(member) \
     ::stress::makeField(#member, &Self::member, false, false, false)
@@ -51,6 +59,134 @@
 
 namespace stress
 {
+    enum class ContainerKind : char
+    {
+        None,       // Not a container
+        Vector,     // std::vector, deque, dynamic array
+        FixedArray, // std::array, C array
+        Map,        // std::map, unordered_map
+        Set,        // std::set, unordered_set
+        String,     // std::string
+        Tuple,      // std::tuple / std::pair
+        Optional,   // std::optional
+        Variant     // std::variant
+    };
+
+    template <typename T>
+    concept Iterable =
+        requires(T t) {
+            std::begin(t);
+            std::end(t);
+        };
+
+    template <typename T>
+    concept StringLike =
+        std::same_as<std::remove_cvref_t<T>, std::string> ||
+        std::same_as<std::remove_cvref_t<T>, std::string_view>;
+
+    template <typename T>
+    concept MapLike =
+        Iterable<T> &&
+        requires {
+            typename T::key_type;
+            typename T::mapped_type;
+        };
+
+    template <typename T>
+    concept SetLike =
+        Iterable<T> &&
+        requires { typename T::key_type; } &&
+        (!requires { typename T::mapped_type; });
+
+    template <class T>
+    struct is_std_array : std::false_type
+    {
+    };
+    template <class U, size_t N>
+    struct is_std_array<std::array<U, N>> : std::true_type
+    {
+    };
+
+    template <class T>
+    inline constexpr bool is_std_array_v = is_std_array<std::remove_cvref_t<T>>::value;
+
+    template <class T>
+    inline constexpr bool is_c_array_v = std::is_array_v<std::remove_reference_t<T>>;
+
+    template <typename T>
+    concept FixedArrayLike = is_std_array_v<T> || is_c_array_v<T>;
+
+    template <typename T>
+    concept TupleLike =
+        requires {
+            typename std::tuple_size<std::remove_cvref_t<T>>::type;
+        };
+
+    template <class T>
+    struct is_optional : std::false_type
+    {
+    };
+    template <class U>
+    struct is_optional<std::optional<U>> : std::true_type
+    {
+    };
+
+    template <class T>
+    inline constexpr bool is_optional_v = is_optional<std::remove_cvref_t<T>>::value;
+
+    template <typename T>
+    concept OptionalLike = is_optional_v<T>;
+
+    template <class T>
+    struct is_variant : std::false_type
+    {
+    };
+    template <class... U>
+    struct is_variant<std::variant<U...>> : std::true_type
+    {
+    };
+
+    template <class T>
+    inline constexpr bool is_variant_v = is_variant<std::remove_cvref_t<T>>::value;
+
+    template <typename T>
+    concept VariantLike = is_variant_v<T>;
+
+    // NOTE: exclude StringLike + MapLike + SetLike to avoid misclassification
+    template <typename T>
+    concept VectorLike =
+        Iterable<T> &&
+        (!StringLike<T>) &&
+        (!MapLike<T>) &&
+        (!SetLike<T>) &&
+        requires(T t) {
+            typename T::value_type;
+            { t.size() } -> std::convertible_to<size_t>;
+            { t[0] }; // supports operator[]
+        };
+
+    template <typename T>
+    constexpr ContainerKind getContainerKind()
+    {
+        if constexpr (StringLike<T>)
+            return ContainerKind::String;
+        else if constexpr (MapLike<T>)
+            return ContainerKind::Map;
+        else if constexpr (SetLike<T>)
+            return ContainerKind::Set;
+        else if constexpr (FixedArrayLike<T>)
+            return ContainerKind::FixedArray;
+        else if constexpr (VectorLike<T>)
+            return ContainerKind::Vector;
+        else if constexpr (TupleLike<T>)
+            return ContainerKind::Tuple;
+        else if constexpr (OptionalLike<T>)
+            return ContainerKind::Optional;
+        else if constexpr (VariantLike<T>)
+            return ContainerKind::Variant;
+        else
+            return ContainerKind::None;
+    }
     struct FieldInfo
     {
         std::string_view name;
@@ -61,6 +197,7 @@ namespace stress
         bool isSerializable = false;
         bool isPrivate = false;
         bool isReadonly = false;
+        ContainerKind containerKind = ContainerKind::None;
 
         using OnChangeFn = void (*)(void *obj, const FieldInfo &field);
         OnChangeFn onChange = nullptr;
@@ -186,6 +323,7 @@ namespace stress
             isSerializable,
             isPrivate,
             isReadonly ? true : std::is_const_v<Member>,
+            getContainerKind<Member>(),
             nullptr};
     }
 
