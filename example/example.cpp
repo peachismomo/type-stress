@@ -7,9 +7,14 @@
     X(EnumType, TWO)                    \
     X(EnumType, THREE)
 
-enum class ExampleEnum : uint8_t { ONE, TWO, THREE };
+enum class ExampleEnum : uint8_t
+{
+    ONE,
+    TWO,
+    THREE
+};
 
-STRESS_ENUM_DEFINE(ExampleEnum, EXAMPLE_ENUM_ITEMS)
+STRESS_ENUM_DEFINE_AND_REGISTER(ExampleEnum, EXAMPLE_ENUM_ITEMS)
 
 STRESS_STRUCT(ExampleStruct)
 {
@@ -40,13 +45,20 @@ STRESS_STRUCT(ExampleStruct2)
         STRESS_FIELD(f))
 };
 
+struct TempStruct
+{
+    int a, b;
+};
+
 STRESS_STRUCT(ExampleStruct3)
 {
     ExampleEnum g;
+    TempStruct h;
 
     STRESS_FIELDS(
-        STRESS_FIELD_WITH_TOSTRING_BODY(g, {
-            return "...";
+        STRESS_FIELD(g),
+        STRESS_FIELD_WITH_TOSTRING_BODY(h, {
+            return "TempStruct{a=" + std::to_string(f.a) + ", b=" + std::to_string(f.b) + "}";
         }))
 };
 
@@ -86,7 +98,8 @@ int main()
     std::cout << typeid(int).name() << " no. of properties=" << typeInfo3.properties.size() << std::endl;
     for (auto &f : typeInfo3.properties)
     {
-        std::cout << "ToString: " << stress::access::AnyToString<decltype(exampleStruct3.g)>(&exampleStruct3.g) << std::endl;
+        auto ptr = stress::access::getFieldPtr(&exampleStruct3, f);
+        std::cout << "ToString: " << stress::access::AnyToStringRuntime(f, ptr) << std::endl;
     }
 
     ExampleStruct exampleStruct(1, 1.f, false);

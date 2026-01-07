@@ -81,6 +81,27 @@
         }                                               \
     }
 
+#define STRESS_ENUM_REGISTER(EnumType)                                 \
+    namespace stress::detail                                           \
+    {                                                                  \
+        inline std::string EnumToStringThunk_##EnumType(const void *p) \
+        {                                                              \
+            const auto &e = *static_cast<const EnumType *>(p);         \
+            return std::string(EnumToString(e));                       \
+        }                                                              \
+        inline void RegisterEnum_##EnumType()                          \
+        {                                                              \
+            ::stress::gToStringRegistry[typeid(EnumType)] =            \
+                &EnumToStringThunk_##EnumType;                         \
+        }                                                              \
+        static inline ::stress::AutoRegisterFn _auto_##EnumType{       \
+            &RegisterEnum_##EnumType};                                 \
+    }
+
+#define STRESS_ENUM_DEFINE_AND_REGISTER(EnumType, LIST_MACRO) \
+    STRESS_ENUM_DEFINE(EnumType, LIST_MACRO)                  \
+    STRESS_ENUM_REGISTER(EnumType)
+
 namespace stress
 {
     enum class ContainerKind : char
@@ -93,8 +114,11 @@ namespace stress
         String,     // std::string
         Tuple,      // std::tuple / std::pair
         Optional,   // std::optional
-        Variant     // std::variant
+        Variant,    // std::variant
+        Enum
     };
+
+    using ToStringFn = std::string (*)(const void *);
 
     template <typename T>
     concept Iterable =
@@ -190,10 +214,15 @@ namespace stress
         };
 
     template <typename T>
+    concept EnumLike = std::is_enum_v<std::remove_cvref_t<T>>;
+
+    template <typename T>
     constexpr ContainerKind getContainerKind()
     {
         if constexpr (StringLike<T>)
             return ContainerKind::String;
+        if constexpr (EnumLike<T>)
+            return ContainerKind::Enum;
         else if constexpr (MapLike<T>)
             return ContainerKind::Map;
         else if constexpr (SetLike<T>)
@@ -226,7 +255,6 @@ namespace stress
         using OnChangeFn = void (*)(void *obj, const FieldInfo &field);
         OnChangeFn onChange = nullptr;
 
-        using ToStringFn = std::string (*)(const void *fieldPtr);
         ToStringFn toString = nullptr;
     };
 
@@ -235,6 +263,9 @@ namespace stress
         std::string_view typeName;
         std::vector<FieldInfo> properties;
     };
+
+    inline std::unordered_map<std::type_index, TypeInfo> gTypeRegistry;
+    inline std::unordered_map<std::type_index, ToStringFn> gToStringRegistry;
 
     namespace access
     {
@@ -323,9 +354,19 @@ namespace stress
             else
                 return StringifyValue(v);
         }
-    }
 
-    inline std::unordered_map<std::type_index, TypeInfo> gTypeRegistry;
+        inline std::string AnyToStringRuntime(const FieldInfo &f, const void *p)
+        {
+            if (auto it = gToStringRegistry.find(f.type); it != gToStringRegistry.end())
+                return it->second(p);
+
+            if (f.toString)
+                return f.toString(p);
+
+            return std::string("<unregistered: ") + f.type.name() + ">";
+        }
+
+    }
 
     template <typename T>
     struct Reflectable
@@ -438,4 +479,10 @@ namespace stress
             return &it->second;
         return nullptr; // type not reflectable
     }
+
+    struct AutoRegisterFn
+    {
+        using Fn = void (*)();
+        AutoRegisterFn(Fn fn) { fn(); }
+    };
 } // namespace stress
