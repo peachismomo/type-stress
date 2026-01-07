@@ -231,7 +231,7 @@ namespace stress
     {
         if constexpr (StringLike<T>)
             return ContainerKind::String;
-        if constexpr (EnumLike<T>)
+        else if constexpr (EnumLike<T>)
             return ContainerKind::Enum;
         else if constexpr (MapLike<T>)
             return ContainerKind::Map;
