@@ -66,6 +66,9 @@
     static auto fields() { return std::make_tuple(__VA_ARGS__); } \
     static inline ::stress::AutoRegister<Self> __auto_reg{};
 
+#define STRESS_CAT2(a, b) a##b
+#define STRESS_CAT(a, b) STRESS_CAT2(a, b)
+
 #define STRESS_ENUM_CASE(EnumType, Name) \
     case EnumType::Name:                 \
         return #Name;
@@ -81,21 +84,28 @@
         }                                               \
     }
 
-#define STRESS_ENUM_REGISTER(EnumType)                                 \
-    namespace stress::detail                                           \
-    {                                                                  \
-        inline std::string EnumToStringThunk_##EnumType(const void *p) \
-        {                                                              \
-            const auto &e = *static_cast<const EnumType *>(p);         \
-            return std::string(EnumToString(e));                       \
-        }                                                              \
-        inline void RegisterEnum_##EnumType()                          \
-        {                                                              \
-            ::stress::gToStringRegistry[typeid(EnumType)] =            \
-                &EnumToStringThunk_##EnumType;                         \
-        }                                                              \
-        static inline ::stress::AutoRegisterFn _auto_##EnumType{       \
-            &RegisterEnum_##EnumType};                                 \
+// Register EnumToString(EnumType) into ::stress::gToStringRegistry[typeid(EnumType)]
+#define STRESS_ENUM_REGISTER(EnumType) \
+    STRESS_ENUM_REGISTER_IMPL(EnumType, __COUNTER__)
+
+#define STRESS_ENUM_REGISTER_IMPL(EnumType, N)                                    \
+    namespace                                                                     \
+    {                                                                             \
+        inline std::string STRESS_CAT(_stress_enum_to_string_, N)(const void *p)  \
+        {                                                                         \
+            const auto &e = *static_cast<const EnumType *>(p);                    \
+            /* unqualified call -> works even if EnumToString lives in UD */      \
+            return std::string(EnumToString(e));                                  \
+        }                                                                         \
+                                                                                  \
+        inline void STRESS_CAT(_stress_enum_register_, N)()                       \
+        {                                                                         \
+            ::stress::gToStringRegistry[typeid(EnumType)] =                       \
+                &STRESS_CAT(_stress_enum_to_string_, N);                          \
+        }                                                                         \
+                                                                                  \
+        static inline ::stress::AutoRegisterFn STRESS_CAT(_stress_enum_auto_, N){ \
+            &STRESS_CAT(_stress_enum_register_, N)};                              \
     }
 
 #define STRESS_ENUM_DEFINE_AND_REGISTER(EnumType, LIST_MACRO) \
