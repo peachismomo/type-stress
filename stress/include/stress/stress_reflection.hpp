@@ -13,6 +13,8 @@
 #include <optional>
 #include <variant>
 #include <array>
+#include <sstream>
+#include <utility>
 
 #define STRESS_FIELD(member) \
     ::stress::makeField(#member, &Self::member, false, false, false)
@@ -38,6 +40,13 @@
 #define STRESS_PRIVATE_READONLY_FIELD_SERIALIZABLE(member) \
     ::stress::makeField(#member, &Self::member, true, true, true)
 
+#define STRESS_FIELD_WITH_TOSTRING_BODY(member, BODY)                             \
+    ::stress::makeFieldWithToString<                                              \
+        +[](                                                                      \
+             const std::remove_cvref_t<decltype(std::declval<Self>().member)> &f) \
+             ->std::string BODY>(                                                 \
+        #member, &Self::member, false, false, false)
+
 #define STRESS_DEFAULT_CTOR() \
     Self() = default;
 
@@ -56,6 +65,21 @@
 #define STRESS_FIELDS(...)                                        \
     static auto fields() { return std::make_tuple(__VA_ARGS__); } \
     static inline ::stress::AutoRegister<Self> __auto_reg{};
+
+#define STRESS_ENUM_CASE(EnumType, Name) \
+    case EnumType::Name:                 \
+        return #Name;
+
+#define STRESS_ENUM_DEFINE(EnumType, LIST_MACRO)        \
+    constexpr std::string_view EnumToString(EnumType v) \
+    {                                                   \
+        switch (v)                                      \
+        {                                               \
+            LIST_MACRO(STRESS_ENUM_CASE, EnumType)      \
+        default:                                        \
+            return "<unknown>";                         \
+        }                                               \
+    }
 
 namespace stress
 {
@@ -201,6 +225,9 @@ namespace stress
 
         using OnChangeFn = void (*)(void *obj, const FieldInfo &field);
         OnChangeFn onChange = nullptr;
+
+        using ToStringFn = std::string (*)(const void *fieldPtr);
+        ToStringFn toString = nullptr;
     };
 
     struct TypeInfo
@@ -249,6 +276,52 @@ namespace stress
             const void *src = getFieldPtr(obj, field);
             outValue = *reinterpret_cast<const Value *>(src);
             return true;
+        }
+
+        template <typename T, typename = void>
+        struct has_ostream_op : std::false_type
+        {
+        };
+
+        template <typename T>
+        struct has_ostream_op<
+            T,
+            std::void_t<decltype(std::declval<std::ostream &>() << std::declval<const T &>())>> : std::true_type
+        {
+        };
+
+        template <typename T>
+        std::string StringifyValue(const T &v)
+        {
+            if constexpr (has_ostream_op<T>::value)
+            {
+                std::ostringstream oss;
+                oss << v;
+                return oss.str();
+            }
+            else
+            {
+                return std::string("<no to_string for ") + typeid(T).name() + ">";
+            }
+        }
+
+        template <typename T>
+        inline std::string AnyToString(const void *p)
+        {
+            const T &v = *static_cast<const T *>(p);
+
+            if constexpr (std::is_same_v<T, bool>)
+                return v ? "true" : "false";
+            else if constexpr (std::is_same_v<T, std::string>)
+                return v;
+            else if constexpr (std::is_arithmetic_v<T>)
+                return std::to_string(v);
+            else if constexpr (std::is_enum_v<T>)
+            {
+                return std::string(EnumToString(v));
+            }
+            else
+                return StringifyValue(v);
         }
     }
 
@@ -325,6 +398,26 @@ namespace stress
             isReadonly ? true : std::is_const_v<Member>,
             getContainerKind<Member>(),
             nullptr};
+    }
+
+    template <typename Member, auto Fn>
+        requires requires(const Member &m) {
+            { Fn(m) } -> std::convertible_to<std::string>;
+        }
+    inline std::string FieldToStringThunk(const void *p)
+    {
+        return std::string(Fn(*static_cast<const Member *>(p)));
+    }
+
+    template <auto Fn, typename Class, typename Member>
+    FieldInfo makeFieldWithToString(const char *name, Member Class::*m,
+                                    bool isSerializable = false,
+                                    bool isPrivate = false,
+                                    bool isReadonly = false)
+    {
+        FieldInfo f = makeField(name, m, isSerializable, isPrivate, isReadonly);
+        f.toString = &FieldToStringThunk<Member, Fn>;
+        return f;
     }
 
     template <typename T>

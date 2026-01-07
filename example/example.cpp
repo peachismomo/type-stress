@@ -2,6 +2,15 @@
 #include <string>
 #include <stress/stress_reflection.hpp>
 
+#define EXAMPLE_ENUM_ITEMS(X, EnumType) \
+    X(EnumType, ONE)                    \
+    X(EnumType, TWO)                    \
+    X(EnumType, THREE)
+
+enum class ExampleEnum : uint8_t { ONE, TWO, THREE };
+
+STRESS_ENUM_DEFINE(ExampleEnum, EXAMPLE_ENUM_ITEMS)
+
 STRESS_STRUCT(ExampleStruct)
 {
     ExampleStruct() = default;
@@ -29,6 +38,16 @@ STRESS_STRUCT(ExampleStruct2)
         STRESS_FIELD(d),
         STRESS_FIELD(e),
         STRESS_FIELD(f))
+};
+
+STRESS_STRUCT(ExampleStruct3)
+{
+    ExampleEnum g;
+
+    STRESS_FIELDS(
+        STRESS_FIELD_WITH_TOSTRING_BODY(g, {
+            return "...";
+        }))
 };
 
 // Inheritance doesn't work yet
@@ -61,8 +80,14 @@ int main()
                   << " size=" << f.size << " type=" << f.type.name() << " iterable=" << int(f.containerKind) << "\n";
     }
 
-    auto &typeInfo3 = stress::getTypeInfo<int>();
+    auto &typeInfo3 = stress::getTypeInfo<ExampleStruct3>();
+    ExampleStruct3 exampleStruct3;
+    exampleStruct3.g = ExampleEnum::ONE;
     std::cout << typeid(int).name() << " no. of properties=" << typeInfo3.properties.size() << std::endl;
+    for (auto &f : typeInfo3.properties)
+    {
+        std::cout << "ToString: " << stress::access::AnyToString<decltype(exampleStruct3.g)>(&exampleStruct3.g) << std::endl;
+    }
 
     ExampleStruct exampleStruct(1, 1.f, false);
 }
