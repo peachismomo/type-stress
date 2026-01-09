@@ -15,6 +15,7 @@ enum class ExampleEnum : uint8_t
 };
 
 STRESS_ENUM_DEFINE_AND_REGISTER(ExampleEnum, EXAMPLE_ENUM_ITEMS)
+STRESS_ENUM_DEFINE_VALUES(ExampleEnum, EXAMPLE_ENUM_ITEMS)
 
 STRESS_STRUCT(ExampleStruct)
 {
@@ -100,6 +101,11 @@ int main()
     {
         auto ptr = stress::access::getFieldPtr(&exampleStruct3, f);
         std::cout << "ToString: " << stress::access::AnyToStringRuntime(f, ptr) << std::endl;
+    }
+
+    for (ExampleEnum e : ExampleEnumValues)
+    {
+        std::cout << EnumToString(e) << std::endl;
     }
 
     ExampleStruct exampleStruct(1, 1.f, false);

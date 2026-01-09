@@ -84,6 +84,14 @@
         }                                               \
     }
 
+#define STRESS_ENUM_VALUE(EnumType, Name) \
+    EnumType::Name,
+
+#define STRESS_ENUM_DEFINE_VALUES(EnumType, LIST_MACRO)  \
+    inline constexpr auto EnumType##Values = std::array{ \
+        LIST_MACRO(STRESS_ENUM_VALUE, EnumType)};        \
+    inline constexpr size_t EnumType##Count = std::size(EnumType##Values);
+
 // Register EnumToString(EnumType) into ::stress::gToStringRegistry[typeid(EnumType)]
 #define STRESS_ENUM_REGISTER(EnumType) \
     STRESS_ENUM_REGISTER_IMPL(EnumType, __COUNTER__)
