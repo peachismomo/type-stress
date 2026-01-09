@@ -54,12 +54,14 @@ STRESS_STRUCT(ExampleStruct3)
 {
     ExampleEnum g;
     TempStruct h;
+    std::string i;
 
     STRESS_FIELDS(
         STRESS_FIELD(g),
         STRESS_FIELD_WITH_TOSTRING_BODY(h, {
             return "TempStruct{a=" + std::to_string(f.a) + ", b=" + std::to_string(f.b) + "}";
-        }))
+        }),
+        STRESS_FIELD(i))
 };
 
 // Inheritance doesn't work yet
@@ -95,6 +97,7 @@ int main()
     auto &typeInfo3 = stress::getTypeInfo<ExampleStruct3>();
     ExampleStruct3 exampleStruct3;
     exampleStruct3.g = ExampleEnum::ONE;
+    exampleStruct3.i = "Hello";
     std::cout << typeid(int).name() << " no. of properties=" << typeInfo3.properties.size() << std::endl;
     for (auto &f : typeInfo3.properties)
     {

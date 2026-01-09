@@ -376,6 +376,9 @@ namespace stress
 
         inline std::string AnyToStringRuntime(const FieldInfo &f, const void *p)
         {
+            if (f.containerKind == ContainerKind::String)
+                return *reinterpret_cast<const std::string *>(p);
+
             if (auto it = gToStringRegistry.find(f.type); it != gToStringRegistry.end())
                 return it->second(p);
 
