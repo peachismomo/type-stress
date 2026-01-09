@@ -118,7 +118,8 @@
 
 #define STRESS_ENUM_DEFINE_AND_REGISTER(EnumType, LIST_MACRO) \
     STRESS_ENUM_DEFINE(EnumType, LIST_MACRO)                  \
-    STRESS_ENUM_REGISTER(EnumType)
+    STRESS_ENUM_REGISTER(EnumType)                            \
+    STRESS_ENUM_DEFINE_VALUES(EnumType, LIST_MACRO)
 
 namespace stress
 {

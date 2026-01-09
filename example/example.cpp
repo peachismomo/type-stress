@@ -15,7 +15,6 @@ enum class ExampleEnum : uint8_t
 };
 
 STRESS_ENUM_DEFINE_AND_REGISTER(ExampleEnum, EXAMPLE_ENUM_ITEMS)
-STRESS_ENUM_DEFINE_VALUES(ExampleEnum, EXAMPLE_ENUM_ITEMS)
 
 STRESS_STRUCT(ExampleStruct)
 {
