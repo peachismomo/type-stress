@@ -7,14 +7,7 @@
     X(EnumType, TWO)                    \
     X(EnumType, THREE)
 
-enum class ExampleEnum : uint8_t
-{
-    ONE,
-    TWO,
-    THREE
-};
-
-STRESS_ENUM_DEFINE_AND_REGISTER(ExampleEnum, EXAMPLE_ENUM_ITEMS)
+STRESS_ENUM_DECLARE_DEFINE_REGISTER(ExampleEnum, uint8_t, EXAMPLE_ENUM_ITEMS)
 
 STRESS_STRUCT(ExampleStruct)
 {

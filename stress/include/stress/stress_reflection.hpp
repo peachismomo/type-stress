@@ -69,6 +69,8 @@
 #define STRESS_CAT2(a, b) a##b
 #define STRESS_CAT(a, b) STRESS_CAT2(a, b)
 
+#define STRESS_ENUM_DECLARE_IGNORED(EnumType, Name) Name,
+
 #define STRESS_ENUM_CASE(EnumType, Name) \
     case EnumType::Name:                 \
         return #Name;
@@ -120,6 +122,13 @@
     STRESS_ENUM_DEFINE(EnumType, LIST_MACRO)                  \
     STRESS_ENUM_REGISTER(EnumType)                            \
     STRESS_ENUM_DEFINE_VALUES(EnumType, LIST_MACRO)
+
+#define STRESS_ENUM_DECLARE_DEFINE_REGISTER(EnumType, Underlying, LIST_MACRO) \
+    enum class EnumType : Underlying                                          \
+    {                                                                         \
+        LIST_MACRO(STRESS_ENUM_DECLARE_IGNORED, EnumType)                     \
+    };                                                                        \
+    STRESS_ENUM_DEFINE_AND_REGISTER(EnumType, LIST_MACRO)
 
 namespace stress
 {
