@@ -439,6 +439,13 @@ namespace stress
     };
 
     template <typename T>
+    using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
+
+    template <typename T>
+    inline constexpr bool is_reflectable_v =
+        std::is_base_of_v<Reflectable<remove_cvref_t<T>>, remove_cvref_t<T>>;
+
+    template <typename T>
     struct AutoRegister
     {
         AutoRegister() { Reflectable<T>::registerType(); }
