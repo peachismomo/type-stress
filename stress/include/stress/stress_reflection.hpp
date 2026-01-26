@@ -135,6 +135,17 @@
 
 namespace stress
 {
+    // check if T has static method: static std::string_view StaticTypeName()
+    template <typename, typename = void>
+    struct HasStaticTypeName : std::false_type
+    {
+    };
+
+    template <typename T>
+    struct HasStaticTypeName<T, std::void_t<decltype(T::StaticTypeName())>> : std::true_type
+    {
+    };
+
     enum class ContainerKind : char
     {
         None,       // Not a container
