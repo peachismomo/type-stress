@@ -16,6 +16,8 @@ STRESS_STRUCT(ExampleStruct)
     ExampleStruct(int a_, float b_, bool c_)
         : a(a_), b(b_), c(c_) {}
 
+    STRESS_NAME(ExampleStruct)
+
     int a;
     float b;
     bool c;
@@ -70,7 +72,7 @@ STRESS_STRUCT(ExampleStruct3)
 int main()
 {
     auto &typeInfo = stress::getTypeInfo<ExampleStruct>();
-    std::cout << typeid(ExampleStruct).name() << " no. of properties=" << typeInfo.properties.size() << std::endl;
+    std::cout << ExampleStruct::StaticTypeName() << " no. of properties=" << typeInfo.properties.size() << std::endl;
 
     for (auto &f : typeInfo.properties)
     {

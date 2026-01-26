@@ -66,6 +66,9 @@
     static auto fields() { return std::make_tuple(__VA_ARGS__); } \
     static inline ::stress::AutoRegister<Self> __auto_reg{};
 
+#define STRESS_NAME(Name) \
+    static constexpr std::string_view StaticTypeName() { return #Name; }
+
 #define STRESS_CAT2(a, b) a##b
 #define STRESS_CAT(a, b) STRESS_CAT2(a, b)
 
