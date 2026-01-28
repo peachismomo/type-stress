@@ -47,6 +47,9 @@
              ->std::string BODY>(                                                 \
         #member, &Self::member, false, false, false)
 
+#define STRESS_FIELD_WITH_MOD(member, setter) \
+    ::stress::makeFieldWithModifier<&Self::setter>(#member, &Self::member, false, false, false)
+
 #define STRESS_DEFAULT_CTOR() \
     Self() = default;
 
@@ -298,6 +301,9 @@ namespace stress
         OnChangeFn onChange = nullptr;
 
         ToStringFn toString = nullptr;
+
+        using ModifierFn = bool (*)(void *obj, const void *value);
+        ModifierFn modifier = nullptr;
     };
 
     struct TypeInfo
@@ -332,7 +338,16 @@ namespace stress
             if (field.type != typeid(Value))
                 return false;
 
-            *reinterpret_cast<Value *>(dst) = value;
+            if (field.modifier)
+            {
+                if (!field.modifier(obj, &value))
+                    return false;
+            }
+            else
+            {
+                void *dst = getFieldPtr(obj, field);
+                *reinterpret_cast<Value *>(dst) = value;
+            }
 
             if (field.onChange)
                 field.onChange(obj, field);
@@ -491,6 +506,27 @@ namespace stress
             isReadonly ? true : std::is_const_v<Member>,
             getContainerKind<Member>(),
             nullptr};
+    }
+
+    template <typename Class, typename Member, auto Setter>
+        requires requires(Class &c, const Member &m) { (c.*Setter)(m); }
+    inline bool FieldModifierThunk(void *obj, const void *value)
+    {
+        auto &c = *static_cast<Class *>(obj);
+        const auto &v = *static_cast<const Member *>(value);
+        (c.*Setter)(v);
+        return true;
+    }
+
+    template <auto Setter, typename Class, typename Member>
+    FieldInfo makeFieldWithModifier(const char *name, Member Class::*m,
+                                    bool isSerializable = false,
+                                    bool isPrivate = false,
+                                    bool isReadonly = false)
+    {
+        FieldInfo f = makeField(name, m, isSerializable, isPrivate, isReadonly);
+        f.modifier = &FieldModifierThunk<Class, Member, Setter>;
+        return f;
     }
 
     template <typename Member, auto Fn>
