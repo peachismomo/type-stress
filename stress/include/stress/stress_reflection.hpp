@@ -330,8 +330,6 @@ namespace stress
         template <typename Value>
         inline bool setFieldValue(void *obj, const FieldInfo &field, const Value &value)
         {
-            void *dst = getFieldPtr(obj, field);
-
             if (field.isReadonly)
                 return false;
 
