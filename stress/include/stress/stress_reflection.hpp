@@ -50,6 +50,9 @@
 #define STRESS_FIELD_WITH_MOD(member, setter) \
     ::stress::makeFieldWithModifier<&Self::setter>(#member, &Self::member, false, false, false)
 
+#define STRESS_FIELD_SERIALIZABLE_WITH_MOD(member, setter) \
+    ::stress::makeFieldWithModifier<&Self::setter>(#member, &Self::member, true, false, false)
+
 #define STRESS_DEFAULT_CTOR() \
     Self() = default;
 
