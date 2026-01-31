@@ -59,15 +59,13 @@ STRESS_STRUCT(ExampleStruct3)
         STRESS_FIELD(i))
 };
 
-// Inheritance doesn't work yet
-// STRESS_STRUCT_INHERIT(ExampleStruct3, public ExampleStruct, public ExampleStruct2)
-// {
-//     int g, h, i;
-//     STRESS_FIELDS(
-//         STRESS_FIELD(g),
-//         STRESS_FIELD(h),
-//         STRESS_FIELD(i))
-// };
+STRESS_STRUCT_INHERIT_BEGIN(ExampleStruct4, ExampleStruct, ExampleStruct2)
+int j, k, l;
+STRESS_FIELDS(
+    STRESS_FIELD(j),
+    STRESS_FIELD(k),
+    STRESS_FIELD(l))
+STRESS_STRUCT_END()
 
 int main()
 {
@@ -103,6 +101,13 @@ int main()
     for (ExampleEnum e : ExampleEnumValues)
     {
         std::cout << EnumToString(e) << std::endl;
+    }
+
+    auto typeInfo4 = stress::getTypeInfo<ExampleStruct4>();
+    for (auto &f : typeInfo4.properties)
+    {
+        std::cout << f.name << " offset=" << f.offset
+                  << " size=" << f.size << " type=" << f.type.name() << " iterable=" << int(f.containerKind) << "\n";
     }
 
     ExampleStruct exampleStruct(1, 1.f, false);

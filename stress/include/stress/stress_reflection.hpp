@@ -68,6 +68,13 @@
 #define STRESS_CLASS_INHERIT(T, ...) \
     class T : public ::stress::Reflectable<T>, __VA_ARGS__
 
+#define STRESS_STRUCT_INHERIT_BEGIN(T, ...)                 \
+    struct T : public ::stress::Reflectable<T>, __VA_ARGS__ \
+    {                                                       \
+        using Self = T;
+
+#define STRESS_STRUCT_END() };
+
 #define STRESS_FIELDS(...)                                        \
     static auto fields() { return std::make_tuple(__VA_ARGS__); } \
     static inline ::stress::AutoRegister<Self> __auto_reg{};
