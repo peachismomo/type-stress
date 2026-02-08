@@ -121,6 +121,7 @@ This header includes a small “X-macro” enum pattern that gives you:
 * `STRESS_ENUM_DECLARE_DEFINE_REGISTER(EnumType, Underlying, LIST_MACRO)` (declares enum + all helpers)
 
 The registration uses an internal `AutoRegisterFn` to insert a `ToStringFn` into `gToStringRegistry[typeid(EnumType)]`.
+There is a bunch of other  macros listed in stress_reflection.hpp.
 
 ---
 
