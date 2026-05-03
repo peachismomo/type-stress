@@ -15,6 +15,7 @@
 #include <array>
 #include <sstream>
 #include <utility>
+#include <cstdint>
 
 #define STRESS_FIELD(member) \
     ::stress::makeField(#member, &Self::member, false, false, false)
